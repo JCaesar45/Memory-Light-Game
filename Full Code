@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Memory Light Game</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    height: 100vh;
+    margin: 0;
+  }
+
+h1 {
+  margin-top: 20px;
+}
+
+#game {
+  margin-top: 30px;
+  display: flex;
+  gap: 10px;
+}
+
+.button {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 0;
+  box-shadow: 0 4px #999;
+  transition: all 0.2s;
+}
+
+#red {
+  background-color: red;
+}
+
+#green {
+  background-color: green;
+}
+
+#blue {
+  background-color: blue;
+}
+
+#yellow {
+  background-color: yellow;
+}
+
+#controls {
+  margin-top: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+#counter {
+  font-size: 2em;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+#strict {
+  width: 20px;
+  height: 20px;
+  margin-left: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>Memory Light Game</h1>
+
+<div id="game">
+  <button id="red" class="button"></button>
+  <button id="green" class="button"></button>
+  <button id="blue" class="button"></button>
+  <button id="yellow" class="button"></button>
+</div>
+
+<div id="controls">
+  <button id="start">Start</button>
+  <button id="reset">Reset</button>
+  <div>
+    Strict Mode
+    <input type="checkbox" id="strict" />
+  </div>
+  <div>
+    Steps: <span id="counter">0</span>
+  </div>
+</div>
+
+<script>
+// URLs for sounds
+const sounds = [
+  'https://cdn.freecodecamp.org/curriculum/take-home-projects/memory-light-game/sound-1.mp3',
+  'https://cdn.freecodecamp.org/curriculum/take-home-projects/memory-light-game/sound-2.mp3',
+  'https://cdn.freecodecamp.org/curriculum/take-home-projects/memory-light-game/sound-3.mp3',
+  'https://cdn.freecodecamp.org/curriculum/take-home-projects/memory-light-game/sound-4.mp3'
+];
+
+// Elements
+const buttons = {
+  red: document.getElementById('red'),
+  green: document.getElementById('green'),
+  blue: document.getElementById('blue'),
+  yellow: document.getElementById('yellow')
+};
+
+const startBtn = document.getElementById('start');
+const resetBtn = document.getElementById('reset');
+const strictCheckbox = document.getElementById('strict');
+const counterSpan = document.getElementById('counter');
+
+let sequence = [];
+let playerSequence = [];
+let strictMode = false;
+let isPlayingSequence = false;
+let currentStep = 0;
+
+// Audio objects
+const audioObjects = sounds.map(s => new Audio(s));
+
+// Game control variables
+let turnInProgress = false;
+
+// Utility functions
+function playSound(index) {
+  const sound = audioObjects[index];
+  sound.currentTime = 0;
+  sound.play();
+}
+
+function flashButton(color) {
+  const btn = buttons[color];
+  btn.style.opacity = '0.5';
+  setTimeout(() => {
+    btn.style.opacity = '1';
+  }, 300);
+}
+
+// Generate next step
+function addStep() {
+  const colors = Object.keys(buttons);
+  const randColor = colors[Math.floor(Math.random() * colors.length)];
+  sequence.push(randColor);
+}
+
+// Display sequence to user
+function playSequence() {
+  turnInProgress = true;
+  let delay = 0;
+  sequence.forEach((color, index) => {
+    setTimeout(() => {
+      flashButton(color);
+      playSound(Object.keys(buttons).indexOf(color));
+    }, delay);
+    delay += 600; // time between flashes
+  });
+  // After sequence is played, allow user input
+  setTimeout(() => {
+    turnInProgress = false;
+    playerSequence = [];
+  }, delay);
+}
+
+// Handle user button presses
+function handleUserInput(color) {
+  if (turnInProgress || isPlayingSequence) return;
+  playerSequence.push(color);
+  // Play sound and flash
+  flashButton(color);
+  playSound(Object.keys(buttons).indexOf(color));
+  // Check correctness
+  const currentIndex = playerSequence.length - 1;
+  if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+    // Wrong input
+    alert('Wrong button!');
+    if (strictMode) {
+      // Restart game
+      startGame();
+    } else {
+      // Replay sequence
+      setTimeout(() => {
+        playSequence();
+      }, 1000);
+    }
+    return;
+  }
+  // If correct so far and sequence complete
+  if (playerSequence.length === sequence.length) {
+    if (sequence.length === 20) {
+      alert('Congratulations! You won!');
+      startGame();
+      return;
+    }
+    // Add new step and play sequence
+    addStep();
+    updateCounter();
+    setTimeout(() => {
+      playSequence();
+    }, 1000);
+  }
+}
+
+// Update step counter display
+function updateCounter() {
+  counterSpan.textContent = sequence.length;
+}
+
+// Start game
+function startGame() {
+  sequence = [];
+  playerSequence = [];
+  addStep();
+  updateCounter();
+  setTimeout(() => {
+    playSequence();
+  }, 500);
+}
+
+// Event listeners
+Object.keys(buttons).forEach(color => {
+  buttons[color].addEventListener('click', () => {
+    handleUserInput(color);
+  });
+});
+
+startBtn.addEventListener('click', () => {
+  startGame();
+});
+
+resetBtn.addEventListener('click', () => {
+  startGame();
+});
+
+strictCheckbox.addEventListener('change', () => {
+  strictMode = strictCheckbox.checked;
+});
+
+// Optional: you can add keyboard support or other UI enhancements
+
+</script>
+</body>
+</html>
